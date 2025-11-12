@@ -1,48 +1,58 @@
 """
-Database Schemas
+Database Schemas for VectorTutor
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a MongoDB collection. The collection name is the
+lowercased class name (e.g., Flashcard -> "flashcard").
 """
-
+from __future__ import annotations
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional, Literal, Dict, Any
 
-# Example schemas (replace with your own):
+class Material(BaseModel):
+    user_id: str = Field(..., description="Owner of this material")
+    title: str = Field(..., description="Material title")
+    type: Literal["pdf", "slides", "image", "text"] = Field(...)
+    text: str = Field(..., description="Raw extracted text content")
+    topics: List[str] = Field(default_factory=list, description="Top-level topics segmented from content")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Flashcard(BaseModel):
+    user_id: str
+    material_id: str
+    topic: str
+    question: str
+    answer: str
+    tags: List[str] = Field(default_factory=list)
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+    source_refs: List[str] = Field(default_factory=list)
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class QuizItem(BaseModel):
+    user_id: str
+    material_id: str
+    topic: str
+    question: str
+    options: List[str]
+    correct_index: int
+    difficulty: Literal["easy", "medium", "hard"] = "medium"
+    explanation: Optional[str] = None
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Plan(BaseModel):
+    user_id: str
+    schedule: List[Dict[str, Any]] = Field(default_factory=list, description="List of study sessions with topics and due dates")
+    goals: List[str] = Field(default_factory=list)
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Performance(BaseModel):
+    user_id: str
+    material_id: Optional[str] = None
+    topic: Optional[str] = None
+    accuracy: float = 0.0
+    attempts: int = 0
+    streak: int = 0
+    last_activity: Optional[str] = None
+
+class ChatHistory(BaseModel):
+    user_id: str
+    material_id: Optional[str] = None
+    question: str
+    answer: str
+    refs: List[str] = Field(default_factory=list)
